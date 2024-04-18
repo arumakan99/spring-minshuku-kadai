@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!-- Thymeleaf -->
+ <html xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+	<head>
+		<!-- th:replace属性：部品化したHTML要素を読み込んで置き換えるための機能 -->
+		<div th:replace="~{fragment :: meta}"></div>
+		
+		<div th:replace="~{fragment :: styles}"></div>
+	
+      	<title>民宿一覧</title>
+	</head>
+	<body>
+		<div class="samuraitravel-wrapper">
+			<!-- ヘッダー -->
+			<div th:replace="~{fragment :: header}"></div>
+			
+			<main>
+				<div class="container pt-4 pb-5 samuraitravel-container">
+					<div class="row justify-content-center">
+						<div class="col-xxl-9 col-xl-10 col-lg-11">
+							
+							<h1 class="mb-4 text-center">民宿一覧</h1>
+							
+							<div class="d-flex justify-content-between align-items-end flex-wrap">
+								<!-- th:action属性：form要素のaction属性（フォームが送信されたときにデータを送信する先のURLを指定する属性）を動的に設定するための機能 -->
+								<form method="get" th:action="@{/admin/houses}" class="mb-3">
+									<div class="input-group">
+										<!-- th:value属性：input要素やoption要素などのvalue属性の値を動的に設定するための機能 -->
+										<input type="text" class="form-control" name="keyword" th:value="${keyword}" placeholder="民宿名">
+										<button type="submit" class="btn text-white shadow-sm samuraitravel-btn">検索</button>
+									</div>
+								</form>
+								
+                                 <a th:href="@{/admin/houses/register}" class="btn text-white shadow-sm mb-3 samuraitravel-btn">登録</a>                                
+							</div>
+							
+							<div th:if="${successMessage}" class="alert alert-info">
+								<span th:text="${successMessage}"></span>
+							</div>
+							
+							<table class="table">
+								<thead>
+									<tr>
+										<th scope="col">ID</th>
+										<th scope="col">民宿名</th>
+										<th scope="col">郵便番号</th>
+										<th scope="col">住所</th>
+										<th scope="col">電話番号</th>
+										<th scope="col"></th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody>
+									<!-- th:each属性：繰り返し処理を行うための機能 -->
+									<!-- 値にListなどのコレクションや配列を指定することで、その要素の数だけ繰り返し処理を行いHTML要素を出力 -->
+									<!-- 今回だとtr要素に対して設定し、コントローラから渡されたhousesの中身を繰り返し表示 -->
+									<!-- 各ループで一時的に代入される変数名 : ${繰り返し処理を実行したい変数名} -->
+<!--								<tr th:each="house : ${houses}">-->
+									<tr th:each="house : ${housePage}">
+										<!-- th:text属性：HTML要素のテキストを動的に設定 -->
+										<!-- 値に変数や式などを指定することで、その中身や結果をHTML要素のテキストとして出力 -->
+										<!-- 今回はhousesオブジェクトの各フィールドの値を動的に出力 -->
+										<td th:text="${house.getId()}"></td>
+										<td th:text="${house.getName()}"></td>
+										<td th:text="${house.getPostalCode()}"></td>
+										<td th:text="${house.getAddress()}"></td>
+										<td th:text="${house.getPhoneNumber()}"></td>
+										<td><a th:href="@{/admin/houses/__${house.getId()}__}">詳細</a></td>
+                                        <td><a href="#" class="samuraitravel-link-danger" data-bs-toggle="modal" th:data-bs-target="${'#deleteHouseModal' + house.getId()}">削除</a></td>     
+										<!-- 削除用モーダル -->
+										<div class="modal fade" th:id="${'deleteHouseModal' + house.getId()}" tabindex="-1"
+											th:aria-labelledby="${'deleteHouseModalLabel' + house.getId()}">
+											<div class="modal-dialog">
+												<div class="modal-content">
+													<div class="modal-header">
+														<h5 class="modal-title" th:id="${'deleteHouseModalLabel' + house.getId()}"
+															th:text="${house.getName() + 'を削除してもよろしいですか？'}"></h5>
+														<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+													</div>
+													<div class="modal-footer">
+														<form method="post" th:action="@{/admin/houses/__${house.getId()}__/delete}">
+															<button type="submit" class="btn samuraitravel-btn-danger text-white shadow-sm">削除</button>
+														</form>
+													</div>
+												</div>
+											</div>
+										</div>
+										</tr>
+								</tbody>
+							</table>
+							
+							<!-- ページネーション -->
+							<!-- th:if属性：条件分岐を行うための機能　${条件式}　指定された条件を満たすときのみ表示される -->
+							<!-- 今回は総ページ数が1より大きいときのみこのdiv要素を表示する処理 -->
+							<div th:if="${housePage.getTotalPages() > 1}" class="d-flex justify-content-center">
+								<nav aria-label="民宿一覧ページ">
+									<ul class="pagination">
+										<li class="page-item">
+											<!-- 現在のページが最初のページであればspan要素を表示、そうでなければa要素を表示 -->
+											<span th:if="${housePage.isFirst()}" class="page-link disabled">前</span>
+											<!-- th:href属性の値に(パラメータ名 = ${変数名})をつけることでパラメータつきURLを動的に生成 -->
+											<!-- 今回はgetNumber()メソッドで現在のページ番号を取得し1を減算することで1つ前のページへのリンクを作成 -->
+											<!-- ページ移動したときにも検索結果が保持されるようにth:href属性にkeywordパラメータを追加 -->
+											<a th:unless="${housePage.isFirst()}" th:href="@{/admin/houses(page = ${housePage.getNumber() - 1}, keyword = ${keyword})}" class="page-link samuraitravel-page-link">前</a>
+										</li>
+										<!-- ページ番号のリンクを総ページ分作成するため繰り返し処理 -->
+										<!-- #numbers.sequence(開始値, 終了値)でその範囲の数値でList生成 -->								
+										<li th:each="i : ${#numbers.sequence(0, housePage.getTotalPages() - 1)}" class="page-item">
+											<span th:if="${i == housePage.getNumber()}" class="page-link active samuraitravel-active" th:text="${i + 1}"></span>
+											<a th:unless="${i == housePage.getNumber()}" th:href="@{/admin/houses(page = ${i}, keyword = ${keyword})}" class="page-link samuraitravel-page-link" th:text="${i + 1}"></a>
+										</li>
+										<li class="page-item">
+											<!-- th:eachで生成したそれぞれのページ番号のリングに対して条件分岐を行い、現在のページ番号と一致すればspan要素、一致しなければa要素を表示 -->
+											<span th:if="${housePage.isLast()}" class="page-link disabled">次</span>
+											<a th:unless="${housePage.isLast()}" th:href="@{/admin/houses(page = ${housePage.getNumber() + 1}, keyword = ${keyword})}" class="page-link samuraitravel-page-link">次</a>
+										</li>
+									</ul>
+								</nav>
+							</div>
+						</div>
+					</div>
+				</div>
+			</main>
+			
+			<!-- フッター -->
+			<div th:replace="~{fragment :: footer}"></div>
+		</div>
+		
+		<div th:replace="~{fragment :: scripts}"></div>
+	</body>
+</html>
